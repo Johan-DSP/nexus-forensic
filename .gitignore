@@ -1,0 +1,40 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.pytest_cache/
+.coverage
+htmlcov/
+.venv/
+venv/
+
+# Base de datos local
+*.db
+*.sqlite
+*.sqlite3
+
+# Entorno
+.env
+.env.local
+
+# Node
+node_modules/
+dist/
+dist-ssr/
+*.local
+
+# IDE
+.vscode/
+.idea/
+*.swp
+.DS_Store
+
+# Storage (evidencias de demo)
+storage/*.txt
+storage/*.pdf
+storage/*.jpg
+storage/*.png
+!storage/.gitkeep
+
+# Context pack generado
+NEXUS_FORENSIC_CONTEXT.md

@@ -1,9 +1,16 @@
 import os
-from pydantic_settings import BaseSettings
+from pydantic_settings import BaseSettings, SettingsConfigDict
 from typing import List
 import json
 
+
 class Settings(BaseSettings):
+    model_config = SettingsConfigDict(
+        env_file=".env",
+        case_sensitive=True,
+        extra="ignore",
+    )
+
     PROJECT_NAME: str = "NEXUS FORENSIC API"
     VERSION: str = "0.1.0"
     APP_ENV: str = "development"
@@ -20,8 +27,5 @@ class Settings(BaseSettings):
         except Exception:
             return ["*"]
 
-    class Config:
-        env_file = ".env"
-        case_sensitive = True
 
 settings = Settings()
