@@ -38,3 +38,17 @@ storage/*.png
 
 # Context pack generado
 NEXUS_FORENSIC_CONTEXT.md
+
+# Entorno — nunca trackear
+.env
+backend/.env
+
+# Backups locales
+*.bak
+*.zip
+
+# Snapshots
+SNAPSHOT_NEXUS.md
+
+# Storage
+storage/*.txt
