@@ -1,10 +1,8 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from app.core.config import settings
-from app.db.database import engine
-from app.db.base import Base
 
-# Importar modelos ANTES de create_all
+# Importar modelos para que SQLAlchemy los registre
 from app.db.models import case, nexus, chrono, evidentia  # noqa: F401
 
 # Importar rutas
@@ -14,9 +12,6 @@ from app.api import (
     chrono as chrono_api,
     evidentia as evidentia_api,
 )
-
-# Para el MVP, creamos las tablas automáticamente
-Base.metadata.create_all(bind=engine)
 
 app = FastAPI(
     title=settings.PROJECT_NAME,

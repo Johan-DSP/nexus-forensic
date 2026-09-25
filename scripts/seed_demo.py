@@ -30,19 +30,41 @@ if _backend_candidate is None:
 sys.path.insert(0, str(_backend_candidate))
 
 from sqlalchemy.orm import Session
-from app.db.database import SessionLocal, engine
-from app.db.base import Base
+from app.db.database import SessionLocal
 from app.core.config import settings
 from app.db.models.case import Case, CaseStatus
 from app.db.models.nexus import Entity, Relationship, EntityType, RelationshipType
 from app.db.models.chrono import Event, EventType, Certainty
-from app.db.models.evidentia import Evidence
+from app.db.models.evidentia import Evidence, AuditLog
+
+
+# -----------------------------------------------------------------
+# Orden de borrado: hijos antes que padres (por FKs)
+# -----------------------------------------------------------------
+_DELETE_ORDER = (
+    Relationship,
+    Evidence,
+    AuditLog,
+    Event,
+    Entity,
+    Case,
+)
 
 
 def clear_database():
-    """Limpia la base de datos para una demostración limpia"""
-    Base.metadata.drop_all(bind=engine)
-    Base.metadata.create_all(bind=engine)
+    """
+    Borra filas sin tocar el schema.
+
+    Esto preserva la tabla `alembic_version`, imprescindible para que
+    `alembic upgrade head` no intente recrear tablas en el siguiente arranque.
+    """
+    db = SessionLocal()
+    try:
+        for model in _DELETE_ORDER:
+            db.query(model).delete()
+        db.commit()
+    finally:
+        db.close()
 
 
 def create_demo_case(db: Session) -> Case:
