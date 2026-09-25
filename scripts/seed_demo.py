@@ -1,18 +1,38 @@
 import sys
 import os
 import uuid
+import hashlib
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
-# Añadir el directorio 'backend' al path de forma absoluta y segura
-backend_path = Path(__file__).resolve().parent.parent / "backend"
-sys.path.append(str(backend_path))
+# -----------------------------------------------------------------
+# Detección automática del layout (dev vs Docker)
+# -----------------------------------------------------------------
+_HERE = Path(__file__).resolve()
+_PROJECT_ROOT = _HERE.parent.parent
+
+# Layout dev: <project>/scripts/seed_demo.py → <project>/backend/app
+_DEV_BACKEND = _PROJECT_ROOT / "backend"
+# Layout Docker: /app/scripts/seed_demo.py → /app/app
+_DOCKER_BACKEND = _PROJECT_ROOT
+
+_backend_candidate = None
+for candidate in (_DEV_BACKEND, _DOCKER_BACKEND):
+    if (candidate / "app" / "__init__.py").exists():
+        _backend_candidate = candidate
+        break
+
+if _backend_candidate is None:
+    raise RuntimeError(
+        f"Cannot find `app` package. Tried: {_DEV_BACKEND}, {_DOCKER_BACKEND}"
+    )
+
+sys.path.insert(0, str(_backend_candidate))
 
 from sqlalchemy.orm import Session
 from app.db.database import SessionLocal, engine
 from app.db.base import Base
-
-# Importar modelos
+from app.core.config import settings
 from app.db.models.case import Case, CaseStatus
 from app.db.models.nexus import Entity, Relationship, EntityType, RelationshipType
 from app.db.models.chrono import Event, EventType, Certainty
@@ -29,7 +49,10 @@ def create_demo_case(db: Session) -> Case:
     demo_case = Case(
         case_number="CASO-2026-DEMO",
         title="Operación Fénix - Demo",
-        description="Caso ficticio autogenerado para demostración de capacidades del sistema NEXUS FORENSIC.",
+        description=(
+            "Caso ficticio autogenerado para demostración de capacidades "
+            "del sistema NEXUS FORENSIC."
+        ),
         status=CaseStatus.IN_PROGRESS,
     )
     db.add(demo_case)
@@ -304,7 +327,7 @@ def seed_data():
         print("✓ 12 Eventos cronológicos creados.")
 
         # 5. Crear Evidencias Ficticias
-        storage_dir = os.path.join(os.path.dirname(__file__), "../storage")
+        storage_dir = settings.STORAGE_PATH
         os.makedirs(storage_dir, exist_ok=True)
 
         for i in range(1, 6):
@@ -312,14 +335,12 @@ def seed_data():
             stored_name = f"{uuid.uuid4().hex}.txt"
             storage_path = os.path.join(storage_dir, stored_name)
 
+            content = f"Archivo de evidencia generado para demostración. ID: {i}"
+
             with open(storage_path, "w") as f:
-                f.write(f"Archivo de evidencia generado para demostración. ID: {i}")
+                f.write(content)
 
-            import hashlib
-
-            h = hashlib.sha256(
-                f"Archivo de evidencia generado para demostración. ID: {i}".encode()
-            ).hexdigest()
+            h = hashlib.sha256(content.encode()).hexdigest()
 
             db.add(
                 Evidence(
@@ -327,7 +348,7 @@ def seed_data():
                     original_filename=dummy_filename,
                     stored_filename=stored_name,
                     mime_type="text/plain",
-                    file_size=55,
+                    file_size=len(content),
                     sha256=h,
                     storage_path=storage_path,
                     description=f"Evidencia simulada {i} recolectada en el sitio.",
@@ -341,6 +362,7 @@ def seed_data():
     except Exception as e:
         print(f"Error generando demo: {e}")
         db.rollback()
+        raise
     finally:
         db.close()
 
